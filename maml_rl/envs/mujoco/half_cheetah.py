@@ -4,11 +4,14 @@ from gym.envs.mujoco import HalfCheetahEnv as HalfCheetahEnv_
 
 
 class HalfCheetahEnv(HalfCheetahEnv_):
+
     def _get_obs(self):
         return np.concatenate([
-            self.sim.data.qpos.flat[1:],
-            self.sim.data.qvel.flat,
-            self.get_body_com("torso").flat,
+            self.sim.data.body_xpos[1:, :].flat,
+            self.sim.data.body_xquat[1:, :].flat,
+            self.sim.data.cvel[1:, :].flat,
+            self.sim.data.qpos[3:].flat,
+            self.sim.data.qvel[3:].flat
         ]).astype(np.float32).flatten()
 
     def viewer_setup(self):
@@ -48,6 +51,7 @@ class HalfCheetahVelEnv(HalfCheetahEnv):
         model-based control", 2012 
         (https://homes.cs.washington.edu/~todorov/papers/TodorovIROS12.pdf)
     """
+
     def __init__(self, task={}, low=0.0, high=2.0):
         self._task = task
         self.low = low
@@ -101,6 +105,7 @@ class HalfCheetahDirEnv(HalfCheetahEnv):
         model-based control", 2012 
         (https://homes.cs.washington.edu/~todorov/papers/TodorovIROS12.pdf)
     """
+
     def __init__(self, task={}):
         self._task = task
         self._goal_dir = task.get('direction', 1)
