@@ -110,8 +110,8 @@ def main(args):
             tabular.record('valid_returns/mean', np.mean(get_returns(valid_episodes)))
             tabular.record('valid_returns/max', np.max(get_returns(valid_episodes)))
             tabular.record('valid_returns/min', np.min(get_returns(valid_episodes)))
-            logger.record('total_time', time.time() - start_time)
-            logger.record('itr_time', time.time() - itr_start_time)
+            tabular.record('total_time', time.time() - start_time)
+            tabular.record('itr_time', time.time() - itr_start_time)
             logger.log(tabular)
 
             logger.pop_prefix()
