@@ -22,7 +22,7 @@ first-order: false
 # Policy network
 # --------------
 # Number of hidden units in each layer.
-hidden-sizes: [64, 64]
+hidden-sizes: [256, 256]
 
 # Non-linear activation function to apply after each hidden layer.
 nonlinearity: "tanh"
