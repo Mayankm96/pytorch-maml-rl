@@ -4,6 +4,8 @@ import json
 import os
 import yaml
 from tqdm import trange
+import time
+import numpy as np
 
 import dowel
 from dowel import logger, tabular
@@ -69,8 +71,10 @@ def main(args):
 
     num_iterations = 0
     logger.log('Starting up...')
+    start_time = time.time()
 
     for batch in range(config['num-batches']):
+        itr_start_time = time.time()
         logger.push_prefix('Itr #{}: '.format(batch))
         logger.log(f'Running training step!')
 
@@ -100,8 +104,14 @@ def main(args):
             tabular.record('itr', batch)
             tabular.record('tasks', tasks)
             tabular.record('num_iterations', num_iterations)
-            tabular.record('train_returns', get_returns(train_episodes[0]))
-            tabular.record('valid_returns', get_returns(valid_episodes))
+            tabular.record('train_returns/mean', np.matrix.mean(get_returns(train_episodes[0])))
+            tabular.record('train_returns/max', np.matrix.max(get_returns(train_episodes[0])))
+            tabular.record('train_returns/min', np.matrix.min(get_returns(train_episodes[0])))
+            tabular.record('valid_returns/mean', np.matrix.mean(get_returns(valid_episodes)))
+            tabular.record('valid_returns/max', np.matrix.max(get_returns(valid_episodes)))
+            tabular.record('valid_returns/min', np.matrix.min(get_returns(valid_episodes)))
+            logger.record_tabular('Time', time.time() - start_time)
+            logger.record_tabular('ItrTime', time.time() - itr_start_time)
             logger.log(tabular)
 
             logger.pop_prefix()
@@ -135,7 +145,7 @@ if __name__ == '__main__':
 
     # Manually set the parameters
     args.config = './configs/maml/halfcheetah-vel.yaml'
-    args.output_folder = './results'
+    args.output_folder = './results/hc-vel-exposed'
     args.seed = None
     args.num_workers = 8
     args.use_cuda = False
