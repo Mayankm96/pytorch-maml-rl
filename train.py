@@ -5,6 +5,8 @@ import os
 import yaml
 from tqdm import trange
 
+import dowel
+from dowel import logger, tabular
 import maml_rl.envs
 from maml_rl.metalearners import MAMLTRPO
 from maml_rl.baseline import LinearFeatureBaseline
@@ -22,10 +24,17 @@ def main(args):
             os.makedirs(args.output_folder)
         policy_filename = os.path.join(args.output_folder, 'policy.th')
         config_filename = os.path.join(args.output_folder, 'config.json')
+        tb_filename = os.path.join(args.output_folder, 'tensorboard_logir')
+        csv_filename = os.path.join(args.output_folder, 'progress.csv')
+        log_filename = os.path.join(args.output_folder, 'log.txt')
 
         with open(config_filename, 'w') as f:
             config.update(vars(args))
             json.dump(config, f, indent=2)
+        logger.add_output(dowel.StdOutput())
+        logger.add_output(dowel.TextOutput(log_filename))
+        logger.add_output(dowel.CsvOutput(csv_filename))
+        logger.add_output(dowel.TensorBoardOutput(tb_filename))
 
     if args.seed is not None:
         torch.manual_seed(args.seed)
@@ -59,7 +68,12 @@ def main(args):
                            device=args.device)
 
     num_iterations = 0
-    for batch in trange(config['num-batches']):
+    logger.log('Starting up...')
+
+    for batch in range(config['num-batches']):
+        logger.push_prefix('Itr #{}: '.format(batch))
+        logger.log(f'Running training step!')
+
         tasks = sampler.sample_tasks(num_tasks=config['meta-batch-size'])
         futures = sampler.sample_async(tasks,
                                        num_steps=config['num-steps'],
@@ -77,15 +91,21 @@ def main(args):
         train_episodes, valid_episodes = sampler.sample_wait(futures)
         num_iterations += sum(sum(episode.lengths) for episode in train_episodes[0])
         num_iterations += sum(sum(episode.lengths) for episode in valid_episodes)
-        logs.update(tasks=tasks,
-                    num_iterations=num_iterations,
-                    train_returns=get_returns(train_episodes[0]),
-                    valid_returns=get_returns(valid_episodes))
 
         # Save policy
         if args.output_folder is not None:
             with open(policy_filename, 'wb') as f:
                 torch.save(policy.state_dict(), f)
+
+            tabular.record('itr', batch)
+            tabular.record('tasks', tasks)
+            tabular.record('num_iterations', num_iterations)
+            tabular.record('train_returns', get_returns(train_episodes[0]))
+            tabular.record('valid_returns', get_returns(valid_episodes))
+            logger.log(tabular)
+
+            logger.pop_prefix()
+            logger.dump_all()
 
 
 if __name__ == '__main__':
@@ -93,26 +113,33 @@ if __name__ == '__main__':
     import multiprocessing as mp
 
     parser = argparse.ArgumentParser(description='Reinforcement learning with '
-        'Model-Agnostic Meta-Learning (MAML) - Train')
+                                                 'Model-Agnostic Meta-Learning (MAML) - Train')
 
-    parser.add_argument('--config', type=str, required=True,
-        help='path to the configuration file.')
+    parser.add_argument('--config', type=str,
+                        help='path to the configuration file.', default='./configs/maml/halfcheetah-vel.yaml')
 
     # Miscellaneous
     misc = parser.add_argument_group('Miscellaneous')
     misc.add_argument('--output-folder', type=str,
-        help='name of the output folder')
+                      help='name of the output folder', default='./results')
     misc.add_argument('--seed', type=int, default=None,
-        help='random seed')
+                      help='random seed')
     misc.add_argument('--num-workers', type=int, default=mp.cpu_count() - 1,
-        help='number of workers for trajectories sampling (default: '
-             '{0})'.format(mp.cpu_count() - 1))
+                      help='number of workers for trajectories sampling (default: '
+                           '{0})'.format(mp.cpu_count() - 1))
     misc.add_argument('--use-cuda', action='store_true',
-        help='use cuda (default: false, use cpu). WARNING: Full upport for cuda '
-        'is not guaranteed. Using CPU is encouraged.')
+                      help='use cuda (default: false, use cpu). WARNING: Full upport for cuda '
+                           'is not guaranteed. Using CPU is encouraged.')
 
     args = parser.parse_args()
+
+    # Manually set the parameters
+    args.config = './configs/maml/halfcheetah-vel.yaml'
+    args.output_folder = './results'
+    args.seed = None
+    args.num_workers = 8
+    args.use_cuda = False
     args.device = ('cuda' if (torch.cuda.is_available()
-                   and args.use_cuda) else 'cpu')
+                              and args.use_cuda) else 'cpu')
 
     main(args)
