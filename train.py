@@ -104,12 +104,12 @@ def main(args):
             tabular.record('itr', batch)
             tabular.record('tasks', tasks)
             tabular.record('num_iterations', num_iterations)
-            tabular.record('train_returns/mean', np.matrix.mean(get_returns(train_episodes[0])))
-            tabular.record('train_returns/max', np.matrix.max(get_returns(train_episodes[0])))
-            tabular.record('train_returns/min', np.matrix.min(get_returns(train_episodes[0])))
-            tabular.record('valid_returns/mean', np.matrix.mean(get_returns(valid_episodes)))
-            tabular.record('valid_returns/max', np.matrix.max(get_returns(valid_episodes)))
-            tabular.record('valid_returns/min', np.matrix.min(get_returns(valid_episodes)))
+            tabular.record('train_returns/mean', np.mean(get_returns(train_episodes[0])))
+            tabular.record('train_returns/max', np.max(get_returns(train_episodes[0])))
+            tabular.record('train_returns/min', np.min(get_returns(train_episodes[0])))
+            tabular.record('valid_returns/mean', np.mean(get_returns(valid_episodes)))
+            tabular.record('valid_returns/max', np.max(get_returns(valid_episodes)))
+            tabular.record('valid_returns/min', np.min(get_returns(valid_episodes)))
             logger.record_tabular('Time', time.time() - start_time)
             logger.record_tabular('ItrTime', time.time() - itr_start_time)
             logger.log(tabular)
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     args.config = './configs/maml/halfcheetah-vel.yaml'
     args.output_folder = './results/hc-vel-exposed'
     args.seed = None
-    args.num_workers = 8
+    args.num_workers = 10
     args.use_cuda = False
     args.device = ('cuda' if (torch.cuda.is_available()
                               and args.use_cuda) else 'cpu')
