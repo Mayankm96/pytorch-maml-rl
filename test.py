@@ -106,8 +106,8 @@ if __name__ == '__main__':
     args.policy = './results/hc-vel-exposed/policy.th'
     args.output = './results_test/hc-vel-exposed/results.npz'
     args.meta_batch_size = 20
-    args.num_batches = 10
-    args.seed = None
+    args.num_batches = 1
+    args.seed = 1
     args.num_workers = 10
     args.use_cuda = False
     args.device = ('cuda' if (torch.cuda.is_available()
