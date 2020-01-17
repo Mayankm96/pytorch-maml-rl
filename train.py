@@ -24,7 +24,7 @@ def main(args):
     if args.output_folder is not None:
         if not os.path.exists(args.output_folder):
             os.makedirs(args.output_folder)
-        policy_filename = os.path.join(args.output_folder, 'policy.th')
+        policy_filename = lambda x: os.path.join(args.output_folder, f'policy_{x}.th')
         config_filename = os.path.join(args.output_folder, 'config.json')
         tb_filename = os.path.join(args.output_folder, 'tensorboard_logir')
         csv_filename = os.path.join(args.output_folder, 'progress.csv')
@@ -98,7 +98,7 @@ def main(args):
 
         # Save policy
         if args.output_folder is not None:
-            with open(policy_filename, 'wb') as f:
+            with open(policy_filename(batch), 'wb') as f:
                 torch.save(policy.state_dict(), f)
 
             tabular.record('itr', batch)
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
     # Manually set the parameters
     args.config = './configs/maml/halfcheetah-vel.yaml'
-    args.output_folder = './results/hc-vel-exposed'
+    args.output_folder = './results/hc-vel-exposed_debug'
     args.seed = None
     args.num_workers = 10
     args.use_cuda = False
